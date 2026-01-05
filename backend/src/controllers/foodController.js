@@ -1,11 +1,24 @@
 import Food from "../models/Food.js";
 import Restaurant from "../models/Restaurant.js";
 
+
+
 // ➕ Add Food (Admin)
 export const createFood = async (req, res) => {
-  const restaurantExists = await Restaurant.findById(req.body.restaurant);
+  const { restaurant } = req.body;
+
+  // ✅ Validate ObjectId first
+  if (!mongoose.Types.ObjectId.isValid(restaurant)) {
+    return res.status(400).json({
+      message: "Invalid restaurant ID",
+    });
+  }
+
+  const restaurantExists = await Restaurant.findById(restaurant);
   if (!restaurantExists) {
-    return res.status(404).json({ message: "Restaurant not found" });
+    return res.status(404).json({
+      message: "Restaurant not found",
+    });
   }
 
   const food = await Food.create(req.body);
