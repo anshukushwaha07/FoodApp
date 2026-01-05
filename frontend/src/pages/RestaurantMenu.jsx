@@ -14,11 +14,11 @@ const RestaurantMenu = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Menu</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Menu</h1>
       {foods.map((food) => (
-        <div key={food._id} className="border p-3 mb-2">
-          <h3 className="font-semibold">{food.name}</h3>
-          <p>₹{food.price}</p>
+        <div key={food._id} className="border p-3 mb-2 rounded-lg bg-white dark:bg-gray-800">
+          <h3 className="font-semibold text-gray-900 dark:text-white">{food.name}</h3>
+          <p className="text-gray-700 dark:text-gray-300">₹{food.price}</p>
         </div>
       ))}
     </div>
