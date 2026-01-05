@@ -7,12 +7,16 @@ import {
   deleteRestaurant,
 } from "../controllers/restaurantController.js";
 
+import { protect } from "../middleware/authMiddleware.js";
+import { adminOnly } from "../middleware/adminMiddleware.js";
+
 const router = express.Router();
 
-router.post("/", createRestaurant);        // admin
-router.get("/", getRestaurants);            // user
+router.get("/", getRestaurants);
 router.get("/:id", getRestaurantById);
-router.put("/:id", updateRestaurant);       // admin
-router.delete("/:id", deleteRestaurant);    // admin
+
+router.post("/", protect, adminOnly, createRestaurant);
+router.put("/:id", protect, adminOnly, updateRestaurant);
+router.delete("/:id", protect, adminOnly, deleteRestaurant);
 
 export default router;
