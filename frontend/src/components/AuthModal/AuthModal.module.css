@@ -1,0 +1,77 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #ffffff;
+  width: 400px;
+  padding: 24px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 10px;
+  background: #ff6347;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.submitBtn:hover {
+  background: #e5533d;
+}
+
+.checkboxRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #555;
+}
+
+.footerText {
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.link {
+  color: #ff6347;
+  cursor: pointer;
+  font-weight: 500;
+}

@@ -1,0 +1,46 @@
+.container {
+  padding: 60px 40px;
+}
+
+.heading {
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.subText {
+  color: #666;
+  max-width: 600px;
+  margin-bottom: 30px;
+}
+
+.categoryList {
+  display: flex;
+  gap: 28px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.card {
+  min-width: 120px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.card:hover .image {
+  transform: scale(1.05);
+}
+
+.name {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 500;
+}
