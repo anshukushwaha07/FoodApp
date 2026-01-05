@@ -16,11 +16,14 @@
 .card h3 {
   margin: 10px 0 4px;
   font-size: 16px;
+  color: #181311;
+  font-weight: 600;
 }
 
 .card p {
   font-weight: 500;
   margin-bottom: 8px;
+  color: #333;
 }
 
 .card button {
