@@ -1,10 +1,9 @@
 .container {
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  padding: 20px;
+  padding: 60px 20px;
 }
 
 .signupCard {

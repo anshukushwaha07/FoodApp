@@ -1,5 +1,4 @@
 import Hero from "../../components/Hero/Hero";
-import Footer from "../../components/Footer/Footer";
 import RestaurantCard from "../../components/RestaurantCard/RestaurantCard";
 import CategorySlider from "../../components/CategoriesSlider/CategoriesSlider";
 import PopularDishes from "../../components/PopularDishes/PopularDishes";
@@ -12,7 +11,7 @@ const TopRestaurants = () => {
         Top Restaurants
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <RestaurantCard 
+        <RestaurantCard
           name="The Burger Joint"
           rating="4.5"
           tags="American • Fast Food • Burgers"
@@ -20,7 +19,7 @@ const TopRestaurants = () => {
           deliveryFee="$2.00"
           image="https://lh3.googleusercontent.com/aida-public/AB6AXuDqwQX8MY9M6uMUYw4aprhpRLi5xf9uPpiXKufL9Ew7nobRV6g0YJu0U6WtpAr2tGGFeAzwLlYirwercclUDqibYdVNkntKkCKgYBdM91f9rRK0LoBoBQhQ9a7ZM3LV6bm0rxA1bjF3nlYKgVvJgj1fa_vKut9YEMANh8KCM4HknGi-Arc4qSJ0rICkV7bUT8hjfCv_2F9swV3svwxZHMVjM-dpWYsj8wM6MQXDWILrOyQABCQY-6UrMK7jzE7aThTffr0_m42qO7I"
         />
-        <RestaurantCard 
+        <RestaurantCard
           name="Sakura Sushi"
           rating="4.9"
           tags="Japanese • Sushi • Asian"
@@ -39,7 +38,6 @@ const Home = () => {
       <CategorySlider />
       <PopularDishes />
       <TopRestaurants />
-      <Footer />
     </>
   );
 };

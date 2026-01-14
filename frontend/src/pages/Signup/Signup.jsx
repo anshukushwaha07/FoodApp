@@ -2,319 +2,247 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
-import styles from "./Signup.module.css";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
-    confirmPassword: "",
-    phone: "",
-    agreeToTerms: false,
+    mobile: "",
   });
-  const [authMode, setAuthMode] = useState("email"); // 'email' or 'phone'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
+    setFormData({ ...formData, [e.target.id]: e.target.value });
     setError("");
   };
 
-  const validateForm = () => {
-    if (authMode === "email") {
-      if (!formData.name.trim()) {
-        setError("Name is required");
-        return false;
-      }
-      if (!formData.email.trim()) {
-        setError("Email is required");
-        return false;
-      }
-      if (formData.password.length < 6) {
-        setError("Password must be at least 6 characters");
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match");
-        return false;
-      }
-    } else {
-      if (!formData.phone.trim()) {
-        setError("Phone number is required");
-        return false;
-      }
-    }
-    if (!formData.agreeToTerms) {
-      setError("You must agree to the terms and conditions");
-      return false;
-    }
-    return true;
-  };
-
-  const handleEmailSignup = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
 
-    setLoading(true);
-    setError("");
+    if (!formData.name || !formData.email || !formData.mobile) {
+      setError("Please fill in all fields");
+      return;
+    }
 
     try {
-      const response = await api.post("/auth/register", {
+      setLoading(true);
+      const res = await api.post("/auth/register", {
         name: formData.name,
         email: formData.email,
-        password: formData.password,
+        phone: formData.mobile,
       });
-
-      login(response.data.user, response.data.token);
+      login(res.data.user, res.data.token);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.message || "Signup failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePhoneSignup = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await api.post("/auth/phone-register", {
-        phone: formData.phone,
-      });
-
-      login(response.data.user, response.data.token);
-      navigate("/");
-    } catch (err) {
-      setError(err.response?.data?.message || "Phone signup failed. Please try again.");
+      setError(err.response?.data?.message || "Signup failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.signupCard}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Create Account</h1>
-          <p className={styles.subtitle}>Join us and start ordering!</p>
-        </div>
+    <div className="bg-[#f8f6f5] flex flex-col">
+      <main className="w-full flex items-center justify-center py-10 px-4 sm:px-6">
+        <div className="w-full max-w-5xl bg-white dark:bg-[#1f1614] rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-175">
 
-        {error && (
-          <div className={styles.error}>
-            {error}
+          {/* LEFT - Image Section */}
+          <div className="lg:w-1/2 relative bg-gray-900 hidden lg:block">
+            <div
+              className="absolute inset-0 w-full h-full bg-cover bg-center"
+              style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDqwQX8MY9M6uMUYw4aprhpRLi5xf9uPpiXKufL9Ew7nobRV6g0YJu0U6WtpAr2tGGFeAzwLlYirwercclUDqibYdVNkntKkCKgYBdM91f9rRK0LoBoBQhQ9a7ZM3LV6bm0rxA1bjF3nlYKgVvJgj1fa_vKut9YEMANh8KCM4HknGi-Arc4qSJ0rICkV7bUT8hjfCv_2F9swV3svwxZHMVjM-dpWYsj8wM6MQXDWILrOyQABCQY-6UrMK7jzE7aThTffr0_m42qO7I')" }}
+            />
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent" />
+
+            <div className="relative h-full flex flex-col justify-end p-12 text-white">
+              <div className="mb-8">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs font-bold mb-4">
+                  <span className="material-symbols-outlined text-[16px]">stars</span>
+                  Join the Community
+                </div>
+                <h2 className="text-4xl font-bold leading-tight mb-4">
+                  Start your culinary journey with us today.
+                </h2>
+                <p className="text-white/70 text-lg leading-relaxed">
+                  Create an account to track orders, save favorites, and get exclusive discounts.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 pt-8 border-t border-white/10">
+                <div className="flex -space-x-3">
+                  <div
+                    className="w-10 h-10 rounded-full border-2 border-white/20 bg-gray-300"
+                    style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDpQNthbLS15Pww-4x118Mflq-uEEpYbh81VRHlYLzmNZCBe4pRKGc8tzcNTizbzeMbrz8nWKM6c-mUpfBBtDmZUp9wYEka32ig8A8mZHF7zL0B4W8wdGXnzUbjHN23Mbj-K5EK8SdHdaPL6-Mkg3ESIEg7BTxHaM9GFatJ6xtu7c8yui0ict5pVWA2mwlnhHtPhYpyBlZ4ejfSaVhebnkKCevxZP-yEQJ7V_r3tWlo_qY96ao1cLSRu8cXh_1IdLwN_1KssNAhv8E')", backgroundSize: "cover" }}
+                  />
+                  <div
+                    className="w-10 h-10 rounded-full border-2 border-white/20 bg-gray-400"
+                    style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDDvcv8K-CUbo9yAJWmmax7Q_tIsng0xySoJ0qO1do1uqk7uqGoQ4UGVIBJAZx_fbJR5f4P0sQCHXnIE0kZ7PKYWDCsKArpdYUaE9CFa5pLzR9Y9K_8ZMNU9PQM6H_ZSRCbhoROHXxaIbm8BXRVpwsouskNn0wFA76JrdfAvUABFoQlCo68vM8h7ZyHlp6eGPqwzVKGseCPYEqQ4XPmU79isEldXgsY8ni5R161yOpvnu-mgivlfKn5OEfQ4nmOYOZ7Ngf6DPK-TXw')", backgroundSize: "cover" }}
+                  />
+                  <div
+                    className="w-10 h-10 rounded-full border-2 border-white/20 bg-gray-500"
+                    style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDf8a8xBkf2bVk8LIe6MujMcsh0DEPKfniVyFlfdNFsu-Ce0UFhU5Tshv_dNEvy6ay3OsLW60Awan6qtzNYpMsFtzmPaKibvIu_cfcKVbkwQHwq9YdO_eKZ3OD0hxFHWRAV026Xwq41B7Cdx6OjBWSl25IKKPYFBuF5LvjNpTeQFO_yN9W8hNmlSpLwH19emJpc8_8U9W52xb5o5wFihC7AeTwaqGGonruRBglk9VCprxWLO7DsXYP9MAI544-4hyv3wJT17TXofsw')", backgroundSize: "cover" }}
+                  />
+                  <div className="w-10 h-10 rounded-full border-2 border-white/20 bg-[#f45925] flex items-center justify-center text-[10px] font-bold">
+                    +5k
+                  </div>
+                </div>
+                <p className="text-sm font-medium">New members joining daily</p>
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* Auth Mode Toggle */}
-        <div className={styles.authModeToggle}>
-          <button
-            className={`${styles.toggleBtn} ${authMode === "email" ? styles.active : ""}`}
-            onClick={() => setAuthMode("email")}
-          >
-            Email
-          </button>
-          <button
-            className={`${styles.toggleBtn} ${authMode === "phone" ? styles.active : ""}`}
-            onClick={() => setAuthMode("phone")}
-          >
-            Phone
-          </button>
+          {/* RIGHT - Form Section */}
+          <div className="w-full lg:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-white">
+            <div className="max-w-md mx-auto w-full">
+              <div className="text-center lg:text-left mb-8">
+                <h1 className="text-3xl font-black text-[#181311] mb-2">
+                  Create Account 🚀
+                </h1>
+                <p className="text-[#8a6b60]">
+                  Fill in your details to get started.
+                </p>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-6 text-center">
+                  {error}
+                </div>
+              )}
+
+              <form className="flex flex-col gap-5" onSubmit={handleSignup}>
+                <div className="flex flex-col gap-2">
+                  <label
+                    className="text-sm font-bold text-[#181311] ml-1"
+                    htmlFor="name"
+                  >
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <span className="material-symbols-outlined text-[#8a6b60]">person</span>
+                    </div>
+                    <input
+                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-[#f8f6f5] border-none focus:ring-2 focus:ring-[#f45925]/20 text-[#181311] placeholder-[#8a6b60]"
+                      id="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="John Doe"
+                      type="text"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    className="text-sm font-bold text-[#181311] ml-1"
+                    htmlFor="email"
+                  >
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <span className="material-symbols-outlined text-[#8a6b60]">mail</span>
+                    </div>
+                    <input
+                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-[#f8f6f5] border-none focus:ring-2 focus:ring-[#f45925]/20 text-[#181311] placeholder-[#8a6b60]"
+                      id="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="name@example.com"
+                      type="email"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    className="text-sm font-bold text-[#181311] ml-1"
+                    htmlFor="mobile"
+                  >
+                    Mobile Number
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <span className="material-symbols-outlined text-[#8a6b60]">phone_iphone</span>
+                    </div>
+                    <input
+                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-[#f8f6f5] border-none focus:ring-2 focus:ring-[#f45925]/20 text-[#181311] placeholder-[#8a6b60]"
+                      id="mobile"
+                      value={formData.mobile}
+                      onChange={handleChange}
+                      placeholder="+1 (555) 000-0000"
+                      type="tel"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-12 mt-4 bg-[#f45925] hover:bg-[#f45925]/90 text-white font-bold rounded-xl shadow-[0_10px_40px_-10px_rgba(244,89,37,0.15)] transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Creating Account..." : "Create Account"}
+                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </button>
+              </form>
+
+              <div className="relative py-4 mt-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#f5f1f0]" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-[#8a6b60]">
+                    Or sign up with
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  className="h-12 flex items-center justify-center gap-3 rounded-xl border border-[#f5f1f0] hover:bg-[#f8f6f5] transition-colors"
+                >
+                  <img
+                    alt="Google"
+                    className="w-5 h-5"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCccUky9GiIm3bKTwkeXg6zRyBDxn0UqBX9OkMF3nIjerVU515XBzBv43P_ptkkzzaukEckZ5cpMjY0XOyOTacBOne0CkTfcculfn0gD40vtcjs4MsG8VFb7M3OYy5MPU7FVOG4J-4kX3xr0D7D9vLftmx4Fd3ebkktxZz_nEQ6LX2m77fl95uBNlLHlzcdto-t3oYewz1SR5layszQM2FYvPkoKmWDGfhTCgAuaghjsJT3-0pkmoMtcoYFda9N4QIUtA4SV3bmjQ"
+                  />
+                  <span className="text-sm font-bold text-[#181311]">Google</span>
+                </button>
+                <button
+                  type="button"
+                  className="h-12 flex items-center justify-center gap-3 rounded-xl border border-[#f5f1f0] hover:bg-[#f8f6f5] transition-colors"
+                >
+                  <img
+                    alt="Apple"
+                    className="w-5 h-5"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDneQP7P3g_nssFM_gxvByBLs-vOZv6Vdy8bRumgKzQUFi77hI1TXIBlX5cgR2Yxk8RlTjgFYuE7ASXFToOZYWZt7IzEyAhHS4xGne6ZBbIMysBc52bWjVRvfWH8zNOulv0lbpgA89g_E1l7WmOkMJLa3orXAvqyXAaRTXuYvtJMyHfcQDYa7UesoKihsAG2PK5P30Ie5JEyIdkOg1bgYZoNVcM7E_IHi-qGU0GhtOS5UHK3R4_xym5mUt1NI_ion7QBvwbVMhHyYo"
+                  />
+                  <span className="text-sm font-bold text-[#181311]">Apple</span>
+                </button>
+              </div>
+
+              <div className="mt-8 text-center">
+                <p className="text-sm text-[#8a6b60]">
+                  Already have an account?{" "}
+                  <Link to="/login" className="text-[#f45925] font-bold hover:underline">
+                    Login
+                  </Link>
+                </p>
+              </div>
+
+              <p className="mt-8 text-center text-xs text-[#8a6b60] leading-relaxed">
+                By creating an account, you agree to our{" "}
+                <a className="text-[#f45925] hover:underline" href="#">Terms of Service</a> and{" "}
+                <a className="text-[#f45925] hover:underline" href="#">Privacy Policy</a>.
+              </p>
+            </div>
+          </div>
         </div>
-
-        {/* Email Signup Form */}
-        {authMode === "email" && (
-          <form onSubmit={handleEmailSignup} className={styles.form}>
-            <div className={styles.inputGroup}>
-              <label htmlFor="name" className={styles.label}>
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Enter your full name"
-                className={styles.input}
-                required
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label htmlFor="email" className={styles.label}>
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email"
-                className={styles.input}
-                required
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label htmlFor="password" className={styles.label}>
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Create a password"
-                className={styles.input}
-                required
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label htmlFor="confirmPassword" className={styles.label}>
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-                className={styles.input}
-                required
-              />
-            </div>
-
-            <div className={styles.checkboxGroup}>
-              <input
-                type="checkbox"
-                id="agreeToTerms"
-                name="agreeToTerms"
-                checked={formData.agreeToTerms}
-                onChange={handleChange}
-                className={styles.checkbox}
-              />
-              <label htmlFor="agreeToTerms" className={styles.checkboxLabel}>
-                I agree to the{" "}
-                <Link to="/terms" className={styles.link}>
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link to="/privacy" className={styles.link}>
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              className={styles.submitBtn}
-              disabled={loading}
-            >
-              {loading ? "Creating Account..." : "Create Account"}
-            </button>
-          </form>
-        )}
-
-        {/* Phone Signup Form */}
-        {authMode === "phone" && (
-          <form onSubmit={handlePhoneSignup} className={styles.form}>
-            <div className={styles.inputGroup}>
-              <label htmlFor="phone" className={styles.label}>
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+1 (555) 000-0000"
-                className={styles.input}
-                required
-              />
-            </div>
-
-            <p className={styles.phoneNote}>
-              We'll send you a verification code via SMS
-            </p>
-
-            <div className={styles.checkboxGroup}>
-              <input
-                type="checkbox"
-                id="agreeToTerms"
-                name="agreeToTerms"
-                checked={formData.agreeToTerms}
-                onChange={handleChange}
-                className={styles.checkbox}
-              />
-              <label htmlFor="agreeToTerms" className={styles.checkboxLabel}>
-                I agree to the{" "}
-                <Link to="/terms" className={styles.link}>
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link to="/privacy" className={styles.link}>
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              className={styles.submitBtn}
-              disabled={loading}
-            >
-              {loading ? "Sending Code..." : "Send Verification Code"}
-            </button>
-          </form>
-        )}
-
-        {/* Divider */}
-        <div className={styles.divider}>
-          <span>OR</span>
-        </div>
-
-        {/* Social Login */}
-        <div className={styles.socialLogin}>
-          <button className={styles.socialBtn}>
-            <svg className={styles.icon} viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Continue with Google
-          </button>
-        </div>
-
-        {/* Footer */}
-        <div className={styles.footer}>
-          <p>
-            Already have an account?{" "}
-            <Link to="/login" className={styles.link}>
-              Login
-            </Link>
-          </p>
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

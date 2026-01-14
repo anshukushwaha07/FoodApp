@@ -32,8 +32,22 @@ const AppRoutes = () => {
           }
         />
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/login"
+          element={
+            <MainLayout>
+              <Login />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <MainLayout>
+              <Signup />
+            </MainLayout>
+          }
+        />
 
         <Route
           path="/restaurant/:id"
