@@ -10,6 +10,8 @@ import AdminRoute from "./AdminRoute";
 
 // Lazy-loaded pages
 const Home = lazy(() => import("../pages/Home/Home"));
+const Login = lazy(() => import("../pages/Login/Login"));
+const Signup = lazy(() => import("../pages/Signup/Signup"));
 const Restaurant = lazy(() => import("../pages/Restaurant/Restaurant"));
 const Cart = lazy(() => import("../pages/Cart/Cart"));
 const Orders = lazy(() => import("../pages/Orders/Orders"));
@@ -29,6 +31,9 @@ const AppRoutes = () => {
             </MainLayout>
           }
         />
+
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
         <Route
           path="/restaurant/:id"

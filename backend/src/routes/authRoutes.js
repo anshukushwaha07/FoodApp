@@ -1,9 +1,19 @@
 import express from "express";
-import { loginOrRegister,verifyPhone } from "../controllers/authController.js";
+import { 
+  register, 
+  login, 
+  loginOrRegister, 
+  verifyPhone 
+} from "../controllers/authController.js";
 
 const router = express.Router();
 
-router.post("/login", loginOrRegister);
+// Email/Password routes
+router.post("/register", register);
+router.post("/login", login);
+
+// Phone authentication routes
+router.post("/phone-login", loginOrRegister);
 router.post("/verify-phone", verifyPhone);
 
 export default router;
