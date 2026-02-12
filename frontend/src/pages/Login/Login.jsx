@@ -1,55 +1,210 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import api from "../../api/axios";
 
 const Login = () => {
-    const [formData, setFormData] = useState({ contact: "", otp: "" });
-    const [loading, setLoading] = useState(false);
+    // Auth mode: 'phone' or 'email'
+    const [authMode, setAuthMode] = useState('phone');
+
+    // Phone auth state
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [otp, setOtp] = useState('');
+    const [userName, setUserName] = useState('');
     const [otpSent, setOtpSent] = useState(false);
+
+    // Email auth state
+    const [email, setEmail] = useState('');
+    const [emailLinkSent, setEmailLinkSent] = useState(false);
+    const [emailUserName, setEmailUserName] = useState('');
+
+    // Common state
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [message, setMessage] = useState("");
 
-    const { login } = useAuth();
+    const { sendOTP, verifyOTP, sendEmailLink, isEmailSignInLink, completeEmailSignIn, getStoredEmail } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.id]: e.target.value });
+    // Check if this is an email sign-in callback
+    useEffect(() => {
+        const checkEmailSignIn = async () => {
+            if (searchParams.get('emailSignIn') === 'true' && isEmailSignInLink()) {
+                setAuthMode('email');
+                const storedEmail = getStoredEmail();
+                if (storedEmail) {
+                    setEmail(storedEmail);
+                    setLoading(true);
+                    setMessage("Completing sign-in...");
+
+                    const result = await completeEmailSignIn(storedEmail, '');
+                    if (result.success) {
+                        setMessage("Login successful!");
+                        navigate("/");
+                    } else {
+                        setError(result.message);
+                        setLoading(false);
+                    }
+                } else {
+                    // Need user to enter email to complete sign-in
+                    setEmailLinkSent(true);
+                    setMessage("Please enter your email to complete sign-in.");
+                }
+            }
+        };
+
+        checkEmailSignIn();
+    }, [searchParams, isEmailSignInLink, completeEmailSignIn, getStoredEmail, navigate]);
+
+    // Reset state when switching auth mode
+    const handleModeSwitch = (mode) => {
+        setAuthMode(mode);
         setError("");
+        setMessage("");
+        setOtpSent(false);
+        setOtp("");
+        setPhoneNumber("");
+        setUserName("");
+        setEmail("");
+        setEmailLinkSent(false);
+        setEmailUserName("");
     };
 
-    const handleSendOtp = async () => {
-        if (!formData.contact) {
-            setError("Please enter mobile number or email");
-            return;
-        }
-        try {
-            setLoading(true);
-            await api.post("/auth/send-otp", { contact: formData.contact });
-            setOtpSent(true);
-            setError("");
-        } catch (err) {
-            setError(err.response?.data?.message || "Failed to send OTP");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleLogin = async (e) => {
+    // Phone OTP: Send OTP
+    const handleSendOTP = async (e) => {
         e.preventDefault();
-        if (!formData.otp) {
-            setError("Please enter OTP");
+        if (!phoneNumber) {
+            setError("Please enter your phone number");
             return;
         }
+
+        // Validate phone format (basic E.164 check)
+        if (!phoneNumber.match(/^\+?[1-9]\d{6,14}$/)) {
+            setError("Please enter a valid phone number (e.g., +919876543210)");
+            return;
+        }
+
+        setError("");
+        setMessage("");
+        setLoading(true);
+
         try {
-            setLoading(true);
-            const res = await api.post("/auth/verify-otp", formData);
-            login(res.data.user, res.data.token);
-            navigate("/");
+            const result = await sendOTP(phoneNumber);
+            if (result.success) {
+                setOtpSent(true);
+                setMessage("OTP sent successfully!");
+            } else {
+                setError(result.message || "Failed to send OTP");
+            }
         } catch (err) {
-            setError(err.response?.data?.message || "Login failed");
+            setError("Failed to send OTP. Please try again.");
         } finally {
             setLoading(false);
         }
+    };
+
+    // Phone OTP: Verify OTP
+    const handleVerifyOTP = async (e) => {
+        e.preventDefault();
+        if (!otp || otp.length !== 6) {
+            setError("Please enter a valid 6-digit OTP");
+            return;
+        }
+
+        setError("");
+        setMessage("");
+        setLoading(true);
+
+        try {
+            const result = await verifyOTP(otp, userName);
+            if (result.success) {
+                setMessage("Login successful!");
+                navigate("/");
+            } else {
+                setError(result.message || "Invalid OTP");
+            }
+        } catch (err) {
+            setError("Failed to verify OTP. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Phone OTP: Resend
+    const handleResendOTP = async () => {
+        setOtpSent(false);
+        setOtp("");
+        setError("");
+        setMessage("");
+        // Will trigger send again when user clicks Send OTP
+    };
+
+    // Email: Send sign-in link
+    const handleSendEmailLink = async (e) => {
+        e.preventDefault();
+        if (!email) {
+            setError("Please enter your email address");
+            return;
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setError("Please enter a valid email address");
+            return;
+        }
+
+        setError("");
+        setMessage("");
+        setLoading(true);
+
+        try {
+            const result = await sendEmailLink(email);
+            if (result.success) {
+                setEmailLinkSent(true);
+                setMessage("Sign-in link sent! Check your email inbox and click the link to login.");
+            } else {
+                setError(result.message || "Failed to send sign-in link");
+            }
+        } catch (err) {
+            setError("Failed to send sign-in link. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Email: Complete sign-in (for when user manually enters email)
+    const handleCompleteEmailSignIn = async (e) => {
+        e.preventDefault();
+        if (!email) {
+            setError("Please enter your email address");
+            return;
+        }
+
+        setError("");
+        setMessage("");
+        setLoading(true);
+
+        try {
+            const result = await completeEmailSignIn(email, emailUserName);
+            if (result.success) {
+                setMessage("Login successful!");
+                navigate("/");
+            } else {
+                setError(result.message || "Failed to complete sign-in");
+            }
+        } catch (err) {
+            setError("Failed to complete sign-in. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Email: Resend link
+    const handleResendEmailLink = () => {
+        setEmailLinkSent(false);
+        setError("");
+        setMessage("");
     };
 
     return (
@@ -107,99 +262,354 @@ const Login = () => {
                         <div className="max-w-md mx-auto w-full">
 
                             {/* Heading */}
-                            <div className="text-center lg:text-left mb-10">
+                            <div className="text-center lg:text-left mb-8">
                                 <h1 className="text-3xl font-black text-[#181311] mb-2">
                                     Welcome Back! 👋
                                 </h1>
                                 <p className="text-[#8a6b60]">
-                                    Login with your mobile number or email to continue.
+                                    Login to continue ordering delicious food.
                                 </p>
                             </div>
 
+                            {/* Auth Mode Toggle */}
+                            <div className="flex gap-2 mb-6 bg-[#f5f3f1] p-1 rounded-full">
+                                <button
+                                    type="button"
+                                    onClick={() => handleModeSwitch('phone')}
+                                    className={`flex-1 py-2.5 px-4 rounded-full text-sm font-bold transition-all ${authMode === 'phone'
+                                        ? 'bg-white text-[#f45925] shadow-sm'
+                                        : 'text-[#8a6b60] hover:text-[#181311]'
+                                        }`}
+                                >
+                                    <span className="material-symbols-outlined text-[16px] align-middle mr-1">phone</span>
+                                    Phone
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleModeSwitch('email')}
+                                    className={`flex-1 py-2.5 px-4 rounded-full text-sm font-bold transition-all ${authMode === 'email'
+                                        ? 'bg-white text-[#f45925] shadow-sm'
+                                        : 'text-[#8a6b60] hover:text-[#181311]'
+                                        }`}
+                                >
+                                    <span className="material-symbols-outlined text-[16px] align-middle mr-1">mail</span>
+                                    Email
+                                </button>
+                            </div>
+
+                            {/* reCAPTCHA container - Required for Firebase Phone Auth */}
+                            <div id="recaptcha-container"></div>
+
+                            {/* Error Message */}
                             {error && (
                                 <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-6 text-center">
                                     {error}
                                 </div>
                             )}
 
-                            <form className="flex flex-col gap-6" onSubmit={handleLogin}>
-
-                                {/* Contact */}
-                                <div>
-                                    <label className="text-sm font-bold text-[#181311] ml-1">
-                                        Mobile Number or Email
-                                    </label>
-                                    <div className="relative mt-2">
-                                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#8a6b60]">
-                                            mail
-                                        </span>
-                                        <input
-                                            id="contact"
-                                            value={formData.contact}
-                                            onChange={handleChange}
-                                            placeholder="Enter mobile number or email"
-                                            className="w-full h-12 pl-11 pr-4 rounded-full bg-[#f5f3f1] text-[#181311] placeholder-[#8a6b60] focus:ring-2 focus:ring-[#f45925]/20 outline-none"
-                                        />
-                                    </div>
+                            {/* Success Message */}
+                            {message && (
+                                <div className="bg-green-50 text-green-600 p-3 rounded-xl text-sm mb-6 text-center">
+                                    {message}
                                 </div>
+                            )}
 
-                                {/* OTP button */}
-                                <div className="flex justify-end">
-                                    <button
-                                        type="button"
-                                        onClick={handleSendOtp}
-                                        disabled={loading || otpSent}
-                                        className="text-[#f45925] text-sm font-bold hover:underline disabled:opacity-50"
-                                    >
-                                        {otpSent ? "OTP Sent ✓" : "Get OTP Code"}
-                                    </button>
-                                </div>
+                            {/* PHONE AUTH MODE */}
+                            {authMode === 'phone' && (
+                                <>
+                                    {!otpSent ? (
+                                        /* Step 1: Enter Phone Number */
+                                        <form className="flex flex-col gap-5" onSubmit={handleSendOTP}>
+                                            <div>
+                                                <label className="text-sm font-bold text-[#181311] ml-1">
+                                                    Phone Number
+                                                </label>
+                                                <div className="relative mt-2">
+                                                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#8a6b60]">
+                                                        phone
+                                                    </span>
+                                                    <input
+                                                        type="tel"
+                                                        value={phoneNumber}
+                                                        onChange={(e) => setPhoneNumber(e.target.value)}
+                                                        placeholder="+919876543210"
+                                                        className="w-full h-12 pl-11 pr-4 rounded-full bg-[#f5f3f1] text-[#181311] placeholder-[#8a6b60] focus:ring-2 focus:ring-[#f45925]/20 outline-none"
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-[#8a6b60] ml-4 mt-2">
+                                                    Enter with country code (e.g., +91 for India)
+                                                </p>
+                                            </div>
 
-                                {/* OTP */}
-                                <div>
-                                    <label className="text-sm font-bold text-[#181311] ml-1">
-                                        One Time Password (OTP)
-                                    </label>
-                                    <div className="relative mt-2">
-                                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#8a6b60]">
-                                            lock
-                                        </span>
-                                        <input
-                                            id="otp"
-                                            value={formData.otp}
-                                            onChange={handleChange}
-                                            disabled={!otpSent}
-                                            inputMode="numeric"
-                                            type="text"
-                                            placeholder="Enter 6-digit OTP"
-                                            className="w-full h-12 pl-11 pr-4 rounded-full bg-[#f5f3f1] text-[#181311] placeholder-[#8a6b60] focus:ring-2 focus:ring-[#f45925]/20 outline-none disabled:opacity-50"
-                                        />
-                                    </div>
+                                            <div>
+                                                <label className="text-sm font-bold text-[#181311] ml-1">
+                                                    Your Name (Optional)
+                                                </label>
+                                                <div className="relative mt-2">
+                                                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#8a6b60]">
+                                                        person
+                                                    </span>
+                                                    <input
+                                                        type="text"
+                                                        value={userName}
+                                                        onChange={(e) => setUserName(e.target.value)}
+                                                        placeholder="John Doe"
+                                                        className="w-full h-12 pl-11 pr-4 rounded-full bg-[#f5f3f1] text-[#181311] placeholder-[#8a6b60] focus:ring-2 focus:ring-[#f45925]/20 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
 
-                                    {otpSent && (
-                                        <p className="text-xs text-[#8a6b60] ml-1 mt-2">
-                                            We just sent a code to your details. It expires in 01:59.
-                                        </p>
+                                            <button
+                                                type="submit"
+                                                disabled={loading || !phoneNumber}
+                                                className="w-full h-12 mt-4 bg-[#f45925] hover:bg-[#f45925]/90 text-white font-bold rounded-full shadow-[0_10px_40px_-10px_rgba(244,89,37,0.15)] flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                            >
+                                                {loading ? (
+                                                    <>
+                                                        <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                                                        Sending...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Send OTP
+                                                        <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </form>
+                                    ) : (
+                                        /* Step 2: Enter OTP */
+                                        <form className="flex flex-col gap-5" onSubmit={handleVerifyOTP}>
+                                            <div className="text-center mb-2">
+                                                <p className="text-sm text-[#8a6b60]">
+                                                    Enter the OTP sent to<br />
+                                                    <span className="font-bold text-[#181311]">{phoneNumber}</span>
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-sm font-bold text-[#181311] ml-1">
+                                                    One Time Password (OTP)
+                                                </label>
+                                                <div className="relative mt-2">
+                                                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#8a6b60]">
+                                                        lock
+                                                    </span>
+                                                    <input
+                                                        type="text"
+                                                        value={otp}
+                                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                                        placeholder="123456"
+                                                        maxLength="6"
+                                                        inputMode="numeric"
+                                                        className="w-full h-12 pl-11 pr-4 rounded-full bg-[#f5f3f1] text-[#181311] placeholder-[#8a6b60] focus:ring-2 focus:ring-[#f45925]/20 outline-none text-center tracking-widest text-lg"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                disabled={loading || otp.length !== 6}
+                                                className="w-full h-12 mt-2 bg-[#f45925] hover:bg-[#f45925]/90 text-white font-bold rounded-full shadow-[0_10px_40px_-10px_rgba(244,89,37,0.15)] flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                            >
+                                                {loading ? (
+                                                    <>
+                                                        <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                                                        Verifying...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Verify & Login
+                                                        <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            <div className="flex gap-3 mt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResendOTP}
+                                                    disabled={loading}
+                                                    className="flex-1 h-10 rounded-full border border-[#f45925] text-[#f45925] font-bold text-sm hover:bg-[#f45925]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                >
+                                                    Resend OTP
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setOtpSent(false);
+                                                        setOtp("");
+                                                        setError("");
+                                                        setMessage("");
+                                                    }}
+                                                    disabled={loading}
+                                                    className="flex-1 h-10 rounded-full border border-[#ddd] text-[#666] font-bold text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                >
+                                                    Change Number
+                                                </button>
+                                            </div>
+                                        </form>
                                     )}
-                                </div>
+                                </>
+                            )}
 
-                                {/* Submit */}
-                                <button
-                                    type="submit"
-                                    disabled={loading || !otpSent}
-                                    className="w-full h-12 mt-4
-          bg-[#f45925] hover:bg-[#f45925]/90
-          text-white font-bold rounded-full
-          shadow-[0_10px_40px_-10px_rgba(244,89,37,0.15)]
-          flex items-center justify-center gap-1
-          disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Verify & Login
-                                    <span className="material-symbols-outlined text-[20px] leading-none">
-                                        arrow_forward
-                                    </span>
-                                </button>
-                            </form>
+                            {/* EMAIL AUTH MODE */}
+                            {authMode === 'email' && (
+                                <>
+                                    {!emailLinkSent ? (
+                                        /* Step 1: Enter Email */
+                                        <form className="flex flex-col gap-5" onSubmit={handleSendEmailLink}>
+                                            <div>
+                                                <label className="text-sm font-bold text-[#181311] ml-1">
+                                                    Email Address
+                                                </label>
+                                                <div className="relative mt-2">
+                                                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#8a6b60]">
+                                                        mail
+                                                    </span>
+                                                    <input
+                                                        type="email"
+                                                        value={email}
+                                                        onChange={(e) => setEmail(e.target.value)}
+                                                        placeholder="your@email.com"
+                                                        className="w-full h-12 pl-11 pr-4 rounded-full bg-[#f5f3f1] text-[#181311] placeholder-[#8a6b60] focus:ring-2 focus:ring-[#f45925]/20 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-sm font-bold text-[#181311] ml-1">
+                                                    Your Name (Optional)
+                                                </label>
+                                                <div className="relative mt-2">
+                                                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#8a6b60]">
+                                                        person
+                                                    </span>
+                                                    <input
+                                                        type="text"
+                                                        value={emailUserName}
+                                                        onChange={(e) => setEmailUserName(e.target.value)}
+                                                        placeholder="John Doe"
+                                                        className="w-full h-12 pl-11 pr-4 rounded-full bg-[#f5f3f1] text-[#181311] placeholder-[#8a6b60] focus:ring-2 focus:ring-[#f45925]/20 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                disabled={loading || !email}
+                                                className="w-full h-12 mt-4 bg-[#f45925] hover:bg-[#f45925]/90 text-white font-bold rounded-full shadow-[0_10px_40px_-10px_rgba(244,89,37,0.15)] flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                            >
+                                                {loading ? (
+                                                    <>
+                                                        <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                                                        Sending...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Send Sign-in Link
+                                                        <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </form>
+                                    ) : (
+                                        /* Step 2: Check Email / Complete Sign-in */
+                                        <div className="flex flex-col gap-5">
+                                            {isEmailSignInLink() ? (
+                                                /* Complete sign-in form */
+                                                <form onSubmit={handleCompleteEmailSignIn}>
+                                                    <div className="text-center mb-4">
+                                                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                            <span className="material-symbols-outlined text-3xl text-green-600">check_circle</span>
+                                                        </div>
+                                                        <p className="text-sm text-[#8a6b60]">
+                                                            Confirm your email to complete sign-in
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="mb-4">
+                                                        <label className="text-sm font-bold text-[#181311] ml-1">
+                                                            Email Address
+                                                        </label>
+                                                        <div className="relative mt-2">
+                                                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#8a6b60]">
+                                                                mail
+                                                            </span>
+                                                            <input
+                                                                type="email"
+                                                                value={email}
+                                                                onChange={(e) => setEmail(e.target.value)}
+                                                                placeholder="your@email.com"
+                                                                className="w-full h-12 pl-11 pr-4 rounded-full bg-[#f5f3f1] text-[#181311] placeholder-[#8a6b60] focus:ring-2 focus:ring-[#f45925]/20 outline-none"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        type="submit"
+                                                        disabled={loading || !email}
+                                                        className="w-full h-12 bg-[#f45925] hover:bg-[#f45925]/90 text-white font-bold rounded-full shadow-[0_10px_40px_-10px_rgba(244,89,37,0.15)] flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    >
+                                                        {loading ? (
+                                                            <>
+                                                                <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                                                                Signing in...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Complete Sign-in
+                                                                <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </form>
+                                            ) : (
+                                                /* Waiting for user to click email link */
+                                                <>
+                                                    <div className="text-center">
+                                                        <div className="w-16 h-16 bg-[#f5f3f1] rounded-full flex items-center justify-center mx-auto mb-4">
+                                                            <span className="material-symbols-outlined text-3xl text-[#f45925]">mark_email_read</span>
+                                                        </div>
+                                                        <h3 className="text-lg font-bold text-[#181311] mb-2">Check Your Email</h3>
+                                                        <p className="text-sm text-[#8a6b60] mb-2">
+                                                            We sent a sign-in link to<br />
+                                                            <span className="font-bold text-[#181311]">{email}</span>
+                                                        </p>
+                                                        <p className="text-xs text-[#8a6b60]">
+                                                            Click the link in the email to complete login. The link expires in 1 hour.
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex gap-3 mt-4">
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleResendEmailLink}
+                                                            disabled={loading}
+                                                            className="flex-1 h-10 rounded-full border border-[#f45925] text-[#f45925] font-bold text-sm hover:bg-[#f45925]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                        >
+                                                            Send Again
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEmailLinkSent(false);
+                                                                setEmail("");
+                                                                setError("");
+                                                                setMessage("");
+                                                            }}
+                                                            disabled={loading}
+                                                            className="flex-1 h-10 rounded-full border border-[#ddd] text-[#666] font-bold text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                        >
+                                                            Change Email
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </>
+                            )}
 
                             {/* Divider */}
                             <div className="relative py-4 mt-6">
@@ -213,10 +623,10 @@ const Login = () => {
                                 </div>
                             </div>
 
-                            {/* Social */}
+                            {/* Social Login */}
                             <div className="grid grid-cols-2 gap-4">
                                 <button className="h-12 rounded-full border border-[#f5f1f0] flex items-center justify-center gap-2 hover:bg-[#f8f6f5] transition-colors">
-                                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5" />
+                                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5" alt="Google" />
                                     <span className="font-bold text-sm text-[#181311]">Google</span>
                                 </button>
                                 <button className="h-12 rounded-full border border-[#f5f1f0] flex items-center justify-center gap-2 hover:bg-[#f8f6f5] transition-colors">
@@ -227,8 +637,8 @@ const Login = () => {
 
                             <p className="mt-8 text-center text-xs text-[#8a6b60]">
                                 By clicking Login, you agree to our{" "}
-                                <span className="text-[#f45925]">Terms</span> and{" "}
-                                <span className="text-[#f45925]">Privacy Policy</span>.
+                                <span className="text-[#f45925] cursor-pointer">Terms</span> and{" "}
+                                <span className="text-[#f45925] cursor-pointer">Privacy Policy</span>.
                             </p>
 
                             <p className="mt-6 text-center text-sm text-[#181311]">
