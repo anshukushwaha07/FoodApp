@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
     isPhoneVerified: { type: Boolean, default: false },
+    firebaseUid: { type: String, sparse: true }, // Firebase UID for phone auth
     address: String,
   },
   { timestamps: true }
@@ -21,10 +22,11 @@ const userSchema = new mongoose.Schema(
 // Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password") || !this.password) {
-    next();
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 // Method to compare password
